@@ -7,9 +7,9 @@
 
 void bfs_adj_matrix(const int *adj, int n, int source, int *dist,int rank) {
     /* Initialize distances */
-    for (int i = 0; i < n; i++) {
-        dist[i] = INT_MAX;
-    }
+    // for (int i = 0; i < n; i++) {
+    //     dist[i] = INT_MAX;
+    // }
 
     int *queue = malloc(n * sizeof(int));
     int front = 0, back = 0;
@@ -31,6 +31,16 @@ void bfs_adj_matrix(const int *adj, int n, int source, int *dist,int rank) {
     free(queue);
 }
 
+
+void intialize_dist(int *dist, int n)
+{
+
+    for (int i = 0; i < n; i++) 
+    {
+        dist[i] = INT_MAX;
+    }
+
+}
 
 void print_adjacency_matrix(const int *adj, int n) {
     printf("Adjacency matrix (%d x %d):\n", n, n);
@@ -94,15 +104,13 @@ void read_adjacency_matrix(const char *filename, int *n, int **adj) {
 }
 
 int main(int argc, char* argv[]) {
+    
+
     if (argc != 2) {
         fprintf(stderr, "Usage: %s graph.txt\n", argv[0]);
         return 1;
     }
 
-
-
-
-   
     int rank, size;
 
     MPI_Init(&argc, &argv);
@@ -114,41 +122,88 @@ int main(int argc, char* argv[]) {
     int n;
     int *adj;
 
-    read_adjacency_matrix(argv[1], &n, &adj);
+    // rank 0 loads the marix and the gets the matrix size.
+
+    if(rank == 0) 
+    {
+
+        read_adjacency_matrix(argv[1], &n, &adj);
+    }
+
+    // sends n to all other ranks, 
+    MPI_Bcast(&n,1,MPI_INT,0,MPI_COMM_WORLD);
+
+
 
     int rows_per_rank = n / size;
+
+    int offset = rows_per_rank + rank; 
+
+
+
 
 
     int *local_adj = (int*)malloc(rows_per_rank * n * sizeof(int));
 
-    int *local_dist = (int*)malloc(rows_per_rank * sizeof(int));
 
-    int *dist; 
+
+    int *local_dist = (int*)malloc(n * sizeof(int)); // holds the distacnes for the local 
+
+    int *dist = NULL; 
     //get_matrix_size(argv[1]&n, &adj);
 
-
-    
-
-
-    //int *result_dist; 
-
-
-    
-    if(rank ==0) 
+    if(rank == 0) 
     {
         dist = (int *)malloc(n*sizeof(int));
     }
 
 
 
+
+    //intialize_dist(local_dist, rows_per_rank); 
+
+    
+  
+    //MPI_Gather(local_dist, rows_per_rank, MPI_INT, dist, rows_per_rank, MPI_INT, 0, MPI_COMM_WORLD);
+
+
     MPI_Scatter(adj,rows_per_rank,MPI_INT,local_adj,rows_per_rank,MPI_INT,0,MPI_COMM_WORLD);
 
 
-    bfs_adj_matrix(local_adj,rows_per_rank,0,local_dist,rank);
 
 
-    MPI_Gather(local_dist, rows_per_rank, MPI_INT, dist, rows_per_rank, MPI_INT, 0, MPI_COMM_WORLD);
+    
 
+
+
+
+
+
+
+
+
+
+
+
+    // if(rank == 0)
+    // {
+    //     for(int i = 0; i < n; i++)
+    //     {
+    //         printf("dist[%d] = %d\n",i,dist[i]);
+    //     }
+    // }
+
+
+
+
+
+
+
+
+
+
+
+    //bfs_adj_matrix(local_adj,rows_per_rank,0,local_dist,rank);
 
 
 
@@ -162,17 +217,17 @@ int main(int argc, char* argv[]) {
 
    // bfs_adj_matrix(adj, n, 0, dist);
 
-   if(rank == 0)
-    {
-       printf("\nBFS distances from source 0:\n");
-       for (int i = 0; i < n; i++)
-        {
-           printf("dist[%d] = %d\n", i, dist[i]);
-        }
-    }
+//    if(rank == 0)
+//     {
+//        printf("\nBFS distances from source 0:\n");
+//        for (int i = 0; i < n; i++)
+//         {
+//            printf("dist[%d] = %d\n", i, dist[i]);
+//         }
+//     }
 
-    free(adj);
-    free(local_adj);
+    if(rank == 0) free(adj);
+    //free(local_adj);
     if(rank == 0) free(dist);
     
 

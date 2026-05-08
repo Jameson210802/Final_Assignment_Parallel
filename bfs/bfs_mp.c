@@ -6,35 +6,51 @@
 
 void bfs_adj_matrix(const int *adj, int n, int source, int *dist) {
     /* Initialize distances */
+    int *queue = malloc(n * sizeof(int));
+    int *local_queue = malloc(n * sizeof(int));
 
-    #pragma omp parallel
+    int front = 0, back = 0; 
+    int u = 0;
+    
+
+    
+    #pragma omp parallel for
+    for (int i = 0; i < n; i++) {
+        dist[i] = INT_MAX;
+    }
+    
+    dist[source] = 0;
+    queue[back++] = source;
+
+    
+    while (front < back) 
     {
+        u = queue[front++];
 
-        for (int i = 0; i < n; i++) {
-            dist[i] = INT_MAX;
-        }
-    
-        int *queue = malloc(n * sizeof(int));
-        int front = 0, back = 0;
-    
-        dist[source] = 0;
-        queue[back++] = source;
-    
-        while (front < back) {
-            int u = queue[front++];
-    
-            for (int v = 0; v < n; v++) {
-                if (adj[u * n + v] && dist[v] == INT_MAX) {
+
+        #pragma omp parallel for
+        for (int v = 0; v < n; v++) 
+        {
+            #pragma omp critical
+            {
+                if (adj[u * n + v] && dist[v] == INT_MAX) 
+                {
+                
+           
+        
                     dist[v] = dist[u] + 1;
-    
-                    #pragma omp critical
                     queue[back++] = v;
+        
                 }
+
             }
         }
-    
-        free(queue);
     }
+    
+
+    
+    free(queue);
+
 }
 
 
@@ -89,20 +105,35 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    int thread_num = 10; 
+
+    omp_set_num_threads(thread_num);
+
+    double start, stop; 
+
     int n;
     int *adj;
 
     read_adjacency_matrix(argv[1], &n, &adj);
-    print_adjacency_matrix(adj, n);
+    //print_adjacency_matrix(adj, n);
 
     int *dist = (int*)malloc(n * sizeof(int));
 
+    start = omp_get_wtime();
+
     bfs_adj_matrix(adj, n, 0, dist);
 
-    printf("\nBFS distances from source 0:\n");
-    for (int i = 0; i < n; i++) {
-        printf("dist[%d] = %d\n", i, dist[i]);
-    }
+    stop = omp_get_wtime();
+
+    double final_time = stop - start;
+
+    printf("time is %lf\n",final_time);
+
+
+    // printf("\nBFS distances from source 0:\n");
+    // for (int i = 0; i < n; i++) {
+    //     printf("dist[%d] = %d\n", i, dist[i]);
+    // }
 
     free(adj);
     return 0;

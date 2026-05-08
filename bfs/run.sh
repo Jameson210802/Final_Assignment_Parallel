@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=bfs-mpi
-#SBATCH --output=bfs-mpi-%j.out
-#SBATCH --error=bfs-mpi-%j.err
+#SBATCH --output=stdout.out
+#SBATCH --error=stderr.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=5
 #SBATCH --time=00:05:00

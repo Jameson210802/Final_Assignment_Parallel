@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <time.h>
+
 
 void bfs_adj_matrix(const int *adj, int n, int source, int *dist) {
     /* Initialize distances */
@@ -83,17 +85,28 @@ int main(int argc, char* argv[]) {
     int n;
     int *adj;
 
+    clock_t start, stop;
+
+
     read_adjacency_matrix(argv[1], &n, &adj);
-    print_adjacency_matrix(adj, n);
+    //print_adjacency_matrix(adj, n);
 
     int *dist = (int*)malloc(n * sizeof(int));
 
+    start = clock();
+
     bfs_adj_matrix(adj, n, 0, dist);
 
-    printf("\nBFS distances from source 0:\n");
-    for (int i = 0; i < n; i++) {
-        printf("dist[%d] = %d\n", i, dist[i]);
-    }
+    stop = clock();
+
+    double final_time = (double) (stop - start) / CLOCKS_PER_SEC;
+
+    printf("time is %lf\n",final_time);
+
+    // printf("\nBFS distances from source 0:\n");
+    // for (int i = 0; i < n; i++) {
+    //     printf("dist[%d] = %d\n", i, dist[i]);
+    // }
 
     free(adj);
     return 0;
