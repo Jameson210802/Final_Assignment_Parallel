@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <mpi.h>
+#include <string.h>
 
 /* -------- Graph structure -------- */
 
@@ -96,6 +98,15 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    int rank, size;
+
+    MPI_Init(&argc, &argv);
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+
+
     Graph g;
     read_graph(argv[1], &g);
 
@@ -106,25 +117,37 @@ int main(int argc, char *argv[]) {
         label[v] = v;
     }
 
+
+    int rows_per_rank = N / size;
+
+    int start = rows_per_rank * rank;
+
+    int end = start + rows_per_rank;
+
+
+
+    double start_time; 
+    double end_time;
+
+
     int changed = 1;
+    int local_changed; 
     int iteration = 0;
 
 
 
-    clock_t start;
-    clock_t end;
+    
+    
+    int *tmp_label = (int*) malloc(N*sizeof(int)); 
 
-    FILE *fptr = fopen("sequential_connected.csv","a");
-
-
-    start = clock();
+    start_time = MPI_Wtime();
 
     /* Label propagation */
     while (changed) {
-        changed = 0;
+        local_changed = 0;
         iteration++;
 
-        for (int v = 0; v < N; v++) {
+        for (int v = start; v < end; v++) {
             int min_label = label[v];
 
             for (int i = 0; i < g.adj[v].degree; i++) {
@@ -136,27 +159,48 @@ int main(int argc, char *argv[]) {
 
             if (min_label < label[v]) {
                 label[v] = min_label;
-                changed = 1;
+                local_changed = 1;
             }
         }
+
+
+
+        MPI_Allreduce(label,tmp_label,N,MPI_INT,MPI_MIN,MPI_COMM_WORLD);
+
+        memcpy(label,tmp_label,N*sizeof(int));
+
+        MPI_Allreduce(&local_changed,&changed,1,MPI_INT,MPI_MAX,MPI_COMM_WORLD);
     }
 
-    end = clock();
+    end_time = MPI_Wtime();
+
+    free(tmp_label);
 
 
-    double total_time = ((double) (end - start)) / CLOCKS_PER_SEC;
-    fprintf(fptr,"%d,%lf\n",1,total_time);
 
-    printf("Execution time: %lf\n",total_time);
-    printf("Converged in %d iterations\n", iteration);
-    printf("Vertex : Component\n");
-    printf("-------------------\n");
+   // printf("Execution time: %lf\n",total_time);
 
-    for (int v = 0; v < N; v++) {
-        printf("%d : %d\n", v, label[v]);
-    }
+   if(rank == 0)
+   {
+        double total_time = end_time - start_time;
+        FILE *fptr = fopen("mpi_connected.csv","a");
 
-    print_components(label, N);
+        char* node_count = getenv("SLURM_NNODES");
+
+        fprintf(fptr,"%s,%d,%lf\n",node_count,size,total_time);
+
+
+       printf("Converged in %d iterations\n", iteration);
+       printf("Vertex : Component\n");
+       printf("-------------------\n");
+   
+       for (int v = 0; v < N; v++) {
+           printf("%d : %d\n", v, label[v]);
+       }
+   
+       print_components(label, N);
+
+   }
 
     /* Cleanup */
     for (int i = 0; i < N; i++) {
@@ -164,6 +208,8 @@ int main(int argc, char *argv[]) {
     }
     free(g.adj);
     free(label);
+
+    MPI_Finalize();
 
     return 0;
 }

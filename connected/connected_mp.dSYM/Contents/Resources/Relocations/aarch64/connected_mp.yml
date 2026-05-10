@@ -1,0 +1,9 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     connected_mp
+relocations:
+  - { offset: 0x9B5, size: 0x8, addend: 0x0, symName: _main, symObjAddr: 0x540, symBinAddr: 0x100000AA0, symSize: 0x214 }
+  - { offset: 0xAAD, size: 0x8, addend: 0x0, symName: _main._omp_fn.0, symObjAddr: 0x0, symBinAddr: 0x100000680, symSize: 0xCC }
+  - { offset: 0xC07, size: 0x8, addend: 0x0, symName: __Z16print_componentsPii, symObjAddr: 0x2E0, symBinAddr: 0x100000960, symSize: 0x124 }
+  - { offset: 0xCA8, size: 0x8, addend: 0x0, symName: __Z10read_graphPKcP5Graph, symObjAddr: 0xCC, symBinAddr: 0x10000074C, symSize: 0x214 }
+...

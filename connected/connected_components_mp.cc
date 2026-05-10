@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
+#include <omp.h>
+
 
 /* -------- Graph structure -------- */
 
@@ -109,21 +110,21 @@ int main(int argc, char *argv[]) {
     int changed = 1;
     int iteration = 0;
 
-
-
-    clock_t start;
-    clock_t end;
-
-    FILE *fptr = fopen("sequential_connected.csv","a");
-
-
-    start = clock();
+    double start;
+    double end;
 
     /* Label propagation */
+
+    FILE *fptr = fopen("mp_connected.csv","a");
+
+
+    start = omp_get_wtime();
+
     while (changed) {
         changed = 0;
         iteration++;
 
+        #pragma omp parallel for
         for (int v = 0; v < N; v++) {
             int min_label = label[v];
 
@@ -136,18 +137,18 @@ int main(int argc, char *argv[]) {
 
             if (min_label < label[v]) {
                 label[v] = min_label;
+
+                #pragma omp atomic write
                 changed = 1;
             }
         }
     }
 
-    end = clock();
+    end = omp_get_wtime();
 
-
-    double total_time = ((double) (end - start)) / CLOCKS_PER_SEC;
-    fprintf(fptr,"%d,%lf\n",1,total_time);
-
-    printf("Execution time: %lf\n",total_time);
+    double total_time = end - start;
+    fprintf(fptr,"%d,%lf\n",omp_get_max_threads(),total_time);
+    printf("mp time is: %lf\n", total_time);
     printf("Converged in %d iterations\n", iteration);
     printf("Vertex : Component\n");
     printf("-------------------\n");
